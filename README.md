@@ -14,9 +14,9 @@ Every year, over **200,000 Indian medical graduates** appear for NEET-PG — one
 
 The tragedy? **The way they study is broken.**
 
-Medical students spend 5–6 years accumulating massive, dense textbooks (Pathology, Pharmacology, Surgery…). But when exam day comes, they are tested through **high-pressure oral viva examinations** — a format that requires instant recall, mechanism-level reasoning, and the ability to think *out loud* under stress.
+Medical students spend 5–6 years accumulating massive, dense textbooks (Pathology, Pharmacology, Surgery…). But when exam day comes, they are tested through **high-pressure oral viva examinations and MCQ papers** — formats that require instant recall, mechanism-level reasoning, and the ability to think *out loud* under stress.
 
-**The gap:** Students read silently, alone. But they are examined verbally, live, under pressure. Nobody trains them for the actual format of the exam.
+**The gap:** Students read silently, alone. But they are examined verbally and under timed pressure. Nobody trains them for the actual format of the exam.
 
 The old solution is to pay thousands of rupees for coaching institutes, find a senior who will spare time, or join a group viva session where 30 students share one teacher. **Access to a relentless, always-available examiner has always been a privilege of the rich.**
 
@@ -28,8 +28,12 @@ The old solution is to pay thousands of rupees for coaching institutes, find a s
 
 - **Relentlessly Socratic** — It doesn't give you the answer. It asks *why*. It probes. It cross-questions until you truly understand.
 - **Grounded in YOUR notes** — Upload your textbook PDF. The AI examines you *only* on what you uploaded. No hallucinations. Every single correction is cited back to a page number.
+- **Persistent Knowledge Base** — Upload once, study forever. Your textbook stays bound to its subject tab. Clicking "+ New Session" resets only your chat history — never your uploaded document.
 - **Available 24/7, for free** — A student in rural Bihar gets the same examiner quality as a student at AIIMS Delhi.
-- **Dual-mode** — Toggle between an open-ended **Viva Mode** (oral-style Socratic dialogue) and **MCQ Mode** (board-style objective questions).
+- **Dual-mode** — Toggle between an open-ended **Viva Mode** (oral-style Socratic dialogue) and **MCQ Mode** (board-style objective questions with clinical vignettes).
+- **Mastery Matrix** — A gamified 'Board Readiness Index' tracks your session progress, with dynamic status tiers that enforce a 60% minimum accuracy gate to prevent brute-forcing.
+- **Smart Fallback** — Even if you upload a scanned/image-based PDF (0 extracted text), MedViva AI falls back to its internal medical knowledge to keep your session going. No crashes. No refusals.
+- **Strict Document Isolation** — Each subject tab has its own upload slot. A Pathology textbook can never "bleed" into a Physiology session.
 - **All 19 NEET-PG subjects covered** — Anatomy, Physiology, Biochemistry, Pathology, Pharmacology, Microbiology, FMT, SPM, General Medicine, Surgery, OBG, Pediatrics, ENT, Ophthalmology, Orthopedics, Radiology, Anesthesia, Dermatology, Psychiatry.
 
 ---
@@ -67,6 +71,7 @@ No file upload needed. Pre-loaded context is baked directly into the API.
 2. Drag and drop it into the upload area in the sidebar
 3. Wait ~5 seconds for Azure AI Search to index it
 4. Select any topic → Watch the AI ground every question in your specific document with page citations
+5. Switch between **Viva Mode** and **MCQ Mode** to see both examination formats
 
 ---
 
@@ -75,26 +80,31 @@ No file upload needed. Pre-loaded context is baked directly into the API.
 ```
 User uploads PDF
        ↓
-pdf-parse extracts raw text
+unpdf extracts raw text (page-by-page)
        ↓
-Text is chunked into 500-token passages
+Text is chunked into 1000-char passages (100-char overlap)
        ↓
 Azure OpenAI text-embedding-3-small generates vectors
        ↓
-Vectors stored in Azure AI Search (HNSW index)
+Vectors stored in Azure AI Search (HNSW + Hybrid Semantic index)
        ↓
-User picks a topic → AI asks opening question
+User picks a topic → uploadJob persisted in localStorage per subject
        ↓
 User answers → answer text is vectorized → top 5 matching chunks retrieved
        ↓
 Chunks injected into system prompt as grounded context
        ↓
-gpt-5.1 generates Socratic evaluation, STRICTLY confined to retrieved text
+gpt-5.1 generates Socratic evaluation OR cited MCQ
        ↓
 Response streamed back with citations (filename + page number)
+       ↓
+Session state (chat, score, uploadJob) auto-saved to localStorage
 ```
 
-**Key Guard-Rail:** The AI is hard-blocked at the API level from generating any question if no document has been uploaded. It cannot use its own training data. Every statement is traceable to a source.
+**Key Guard-Rails:**
+- **API-level block:** If no filename is sent from the client, vector search is completely skipped — no cross-document leakage possible.
+- **Smart fallback:** If the PDF yields no extractable text (scanned/image PDF), both Viva and MCQ modes fall back to internal medical knowledge and always generate a question.
+- **Document isolation:** Each topic (`medviva-topic-{subject}`) has its own isolated localStorage slot.
 
 ---
 
@@ -107,7 +117,8 @@ Response streamed back with citations (filename + page number)
 | AI — Chat | Azure OpenAI `gpt-5.1` |
 | AI — Embeddings | Azure OpenAI `text-embedding-3-small` |
 | Vector Search | Azure AI Search (HNSW + Hybrid Semantic) |
-| Document Parsing | `pdf-parse` |
+| Document Parsing | `unpdf` (serverless-safe, no canvas/worker deps) |
+| Session Persistence | Browser `localStorage` (metadata only, no raw PDF data) |
 | Dev Assistance | GitHub Copilot (inline + agent mode) |
 
 ---
@@ -118,8 +129,9 @@ GitHub Copilot was an active co-developer throughout this project:
 
 - **Component Scaffolding** — Used Copilot Chat to generate React component structures and CSS Module skeletons for the chat UI, sidebar, and score panel.
 - **Complex Regex** — Copilot generated the SSE streaming parser and the MCQ XML tag extraction regex (`/<correct>[\s\S]*?<\/correct>/gi`).
-- **System Prompt Hardening** — Copilot Agent mode was used to iteratively tighten the guardrail logic in `lib/system-prompt.ts`, preventing hallucination fallbacks.
-- **API Route Logic** — The hard-block refusal pattern in `app/api/chat/route.ts` was pair-programmed with Copilot suggestions.
+- **System Prompt Hardening** — Copilot Agent mode was used to iteratively tighten the guardrail logic in `lib/system-prompt.ts`, preventing hallucination fallbacks and eliminating contradictory "knowledge confinement" rules.
+- **API Route Logic** — The hard-block refusal pattern and document-isolation guard in `app/api/chat/route.ts` were pair-programmed with Copilot suggestions.
+- **State Management** — Copilot helped architect the per-topic localStorage persistence strategy to avoid Next.js hydration errors.
 
 ---
 
@@ -166,6 +178,8 @@ AZURE_OPENAI_EMBEDDING_DEPLOYMENT=
 AZURE_SEARCH_ENDPOINT=
 AZURE_SEARCH_API_KEY=
 AZURE_SEARCH_INDEX_NAME=
+
+AZURE_OPENAI_API_VERSION=
 ```
 
 ---
@@ -177,15 +191,17 @@ medviva-ai/
 ├── app/
 │   ├── page.tsx              # Landing page
 │   ├── viva/
-│   │   ├── page.tsx          # Main examination interface
+│   │   ├── page.tsx          # Main examination interface (Viva + MCQ)
 │   │   └── viva.module.css   # Scoped styles
 │   └── api/
-│       ├── chat/route.ts     # AI chat endpoint (RAG pipeline)
-│       └── upload/route.ts   # PDF upload & indexing endpoint
+│       ├── chat/route.ts     # AI chat endpoint (RAG pipeline + guardrails)
+│       ├── upload/route.ts   # PDF upload & async indexing endpoint
+│       └── index-status/     # Job polling endpoint
 ├── lib/
 │   ├── azure-search.ts       # Azure AI Search client & retrieval
 │   ├── azure-openai.ts       # Azure OpenAI streaming client
-│   └── system-prompt.ts      # Guardrail prompts (Viva + MCQ)
+│   ├── chunker.ts            # Recursive text splitter + PDF extraction
+│   └── system-prompt.ts      # Guardrail prompts (Viva + MCQ modes)
 ├── public/
 │   └── demo-assets/
 │       └── High-Yield-Pathology-Demo.pdf

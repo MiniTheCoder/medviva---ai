@@ -36,11 +36,14 @@ The management of systolic heart failure (HFrEF) relies on neurohormonal blockad
     let groundedContext = "";
     const isDemo = filename === DEMO_FILENAME;
 
-    try {
-      retrievedChunks = await searchKnowledgeBase(lastUserMessage, topic, filename, 5);
-      groundedContext = buildGroundedContext(retrievedChunks);
-    } catch (searchError) {
-      console.warn("Azure Search error — proceeding with empty context:", searchError);
+    // Only search if a filename is provided. Prevents cross-document leakage when uploadJob is null.
+    if (filename) {
+      try {
+        retrievedChunks = await searchKnowledgeBase(lastUserMessage, topic, filename, 5);
+        groundedContext = buildGroundedContext(retrievedChunks);
+      } catch (searchError) {
+        console.warn("Azure Search error — proceeding with empty context:", searchError);
+      }
     }
 
     // If demo mode and Azure returned nothing, use hardcoded fallback
@@ -53,7 +56,8 @@ The management of systolic heart failure (HFrEF) relies on neurohormonal blockad
     // (user clicked a topic without uploading anything), we return a refusal
     // message directly without spending a single token on Azure OpenAI.
     if (!filename && groundedContext === "") {
-      const refusalMessage = `Welcome to the ${topic || "Medical"} Examination Room. I am your examiner. Currently, the knowledge base is unprovisioned. Please upload your curriculum notes or textbook chapter in the sidebar so I can analyze the text and begin your custom assessment.`;
+      const modeText = mode === "mcq" ? "generate cited MCQs" : "analyze the text and begin your custom assessment";
+      const refusalMessage = `Welcome to the ${topic || "Medical"} Examination Room. I am your examiner. Currently, the knowledge base is unprovisioned. Please upload your curriculum notes or textbook chapter in the sidebar so I can ${modeText}.`;
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
         start(controller) {

@@ -117,12 +117,52 @@ export default function VivaPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Persistent Session Save ────────────────────────────────────────────────
+  useEffect(() => {
+    if (activeTopic && mounted) {
+      const stateToSave = {
+        messages,
+        score,
+        uploadJob,
+        conversationHistory,
+        appMode
+      };
+      localStorage.setItem(`medviva-topic-${activeTopic}`, JSON.stringify(stateToSave));
+    }
+  }, [activeTopic, mounted, messages, score, uploadJob, conversationHistory, appMode]);
+
   // ── TASK 5: Start a new session for a topic ───────────────────────────────
-  const startTopic = useCallback(async (topic: string) => {
+  const startTopic = useCallback(async (topic: string, forceNew = false) => {
     // Abort any in-flight request
     abortControllerRef.current?.abort();
 
     setActiveTopic(topic);
+
+    let currentUploadJob = uploadJob;
+
+    if (!forceNew && mounted) {
+      const savedState = localStorage.getItem(`medviva-topic-${topic}`);
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState);
+          setMessages(parsed.messages || []);
+          setConversationHistory(parsed.conversationHistory || []);
+          setScore(parsed.score || { correct: 0, partial: 0, wrong: 0, total: 0 });
+          setUploadJob(parsed.uploadJob || null);
+          currentUploadJob = parsed.uploadJob || null;
+          setAppMode(parsed.appMode || "viva");
+          setIsStreaming(false);
+          return; // Exit early, we loaded existing state
+        } catch (e) {
+          console.error("Failed to parse saved state", e);
+        }
+      } else {
+        // If switching topics but no saved state, clear uploadJob
+        setUploadJob(null);
+        currentUploadJob = null;
+      }
+    }
+
     setMessages([]);
     setConversationHistory([]);
     setScore({ correct: 0, partial: 0, wrong: 0, total: 0 });
@@ -142,7 +182,7 @@ export default function VivaPage() {
 
     // Call the real API
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    await streamChatResponse(history, topic, true);
+    await streamChatResponse(history, topic, true, currentUploadJob?.filename);
   }, [appMode, uploadJob?.filename]);
 
   // ── TASK 1 + 5: Stream chat from the grounded RAG API ────────────────────
@@ -150,7 +190,8 @@ export default function VivaPage() {
     async (
       history: Array<{ role: "user" | "assistant"; content: string }>,
       topic: string | null,
-      isOpening = false
+      isOpening = false,
+      filenameOverride?: string
     ) => {
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -172,10 +213,12 @@ export default function VivaPage() {
       let citations: Citation[] = [];
 
       try {
+        const activeFilename = filenameOverride !== undefined ? filenameOverride : uploadJob?.filename;
+
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, topic, mode: appMode, filename: uploadJob?.filename }),
+          body: JSON.stringify({ messages: history, topic, mode: appMode, filename: activeFilename }),
           signal: controller.signal,
         });
 
@@ -446,6 +489,28 @@ export default function VivaPage() {
       ? Math.round(((score.correct + score.partial * 0.5) / score.total) * 100)
       : 0;
 
+  // ── Mastery Matrix Calculation ──────────────────────────────────────────
+  const TARGET_QUESTIONS = 20;
+  const progressPercent = Math.min(100, Math.round((score.total / TARGET_QUESTIONS) * 100));
+
+  let readinessText = "";
+  let isWarning = false;
+
+  if (score.total === 0) {
+    readinessText = "Not Started";
+  } else if (accuracy < 60) {
+    readinessText = "Review Needed: Accuracy too low for board competency.";
+    isWarning = true;
+  } else if (progressPercent <= 25) {
+    readinessText = "Initialization — Building Clinical Foundation";
+  } else if (progressPercent <= 50) {
+    readinessText = "Intermediate — Patching Conceptual Gaps";
+  } else if (progressPercent <= 75) {
+    readinessText = "Advanced — High-Yield Competency Achieved";
+  } else {
+    readinessText = "Board Ready — Core Material Fully Audited";
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.layout}>
@@ -461,10 +526,25 @@ export default function VivaPage() {
             className={styles.newSessionBtn}
             onClick={() => {
               abortControllerRef.current?.abort();
-              setMessages([]);
-              setActiveTopic(null);
-              setConversationHistory([]);
-              setScore({ correct: 0, partial: 0, wrong: 0, total: 0 });
+              if (activeTopic) {
+                // Wipe session data but preserve the uploaded document
+                const preservedState = {
+                  messages: [],
+                  score: { correct: 0, partial: 0, wrong: 0, total: 0 },
+                  uploadJob: uploadJob,
+                  conversationHistory: [],
+                  appMode: appMode
+                };
+                localStorage.setItem(`medviva-topic-${activeTopic}`, JSON.stringify(preservedState));
+                startTopic(activeTopic, true);
+              } else {
+                setMessages([]);
+                setActiveTopic(null);
+                setConversationHistory([]);
+                setScore({ correct: 0, partial: 0, wrong: 0, total: 0 });
+                // We keep uploadJob here just in case, or null it out if you want a true reset when no topic is selected.
+                setUploadJob(null);
+              }
             }}
           >
             + New Session
@@ -898,6 +978,20 @@ export default function VivaPage() {
               className={styles.scoreBarFill}
               style={{ width: `${accuracy}%` }}
             />
+          </div>
+        </div>
+
+        {/* ── Mastery Matrix ────────────────────────────────────────────── */}
+        <div className={styles.masteryCard}>
+          <div className={styles.masteryTitle}>Board Readiness Index</div>
+          <div className={styles.masteryBarContainer}>
+            <div
+              className={isWarning ? styles.masteryBarFillWarning : styles.masteryBarFill}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className={styles.masterySubtext}>
+            {readinessText}
           </div>
         </div>
 

@@ -177,7 +177,7 @@ export default function Home() {
           <span className={styles.sectionLabel}>✦ Features</span>
           <h2 className={styles.sectionTitle}>
             Everything you need to{" "}
-            <span className="gradient-text">ace your viva</span>
+            <span className="gradient-text">ace your exams</span>
           </h2>
           <p className={styles.sectionSubtitle}>
             Built for medical students who want to practice smarter, not harder. Every feature is designed to simulate real exam pressure.
