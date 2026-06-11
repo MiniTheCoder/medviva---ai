@@ -97,6 +97,20 @@
   color: #a5b4fc;
 }
 
+/* ── Header Danger Button (Stop Speaking) ─────────────────────────────────── */
+.headerBtnDanger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
+.headerBtnDanger:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #fecaca;
+}
+
 /* ── Streaming Cursor ─────────────────────────────────────────────────────── */
 .streamingCursor {
   display: inline-block;
@@ -238,18 +252,22 @@
 }
 
 .sidebarFooter {
-  padding: 16px 20px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border-subtle);
 }
 
 .uploadArea {
-  padding: 16px;
+  padding: 10px;
   border: 1px dashed rgba(99,102,241,0.3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
   background: rgba(99,102,241,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .uploadArea:hover {
@@ -258,14 +276,14 @@
 }
 
 .uploadIcon {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: 16px;
+  margin-bottom: 4px;
 }
 
 .uploadText {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 .uploadTextBold {
@@ -928,4 +946,253 @@
 .statRowValue {
   font-weight: 700;
   color: var(--text-primary);
+}
+
+/* ── Sidebar Toggle ────────────────────────────────────────────────────────── */
+.sidebarCollapsed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+  opacity: 0;
+}
+
+.sidebarToggleBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 22px;
+  margin-right: 16px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarToggleBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+
+/* ── Topic Menu (3 dots) ─────────────────────────────────────────────────── */
+.topicSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 8px;
+}
+
+.topicSectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.topicMenuBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topicMenuBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+
+.topicMenuDropdown {
+  position: absolute;
+  top: 38px;
+  right: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 100;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  min-width: 180px;
+}
+
+.topicMenuItem {
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s;
+}
+
+.topicMenuItem:hover {
+  background: rgba(99,102,241,0.15);
+  color: var(--brand-primary);
+}
+
+/* ── Saved Questions Modal ───────────────────────────────────────────────── */
+.savedModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.savedModalContent {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.savedModalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10,15,30,0.6);
+}
+
+.savedModalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.savedModalClose {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.savedModalClose:hover {
+  color: #ef4444;
+}
+
+.savedModalBody {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.savedCard {
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.savedCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: rgba(99,102,241,0.04);
+}
+
+.savedCardHeader:hover {
+  background: rgba(99,102,241,0.08);
+}
+
+.savedCardIcon {
+  font-size: 16px;
+}
+
+.savedCardBadge {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(99,102,241,0.15);
+  color: #a5b4fc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.savedCardPreview {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.savedCardTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.savedCardChevron {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+.savedCardDelete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.savedCardDelete:hover {
+  color: #ef4444;
+}
+
+.savedCardExpanded {
+  padding: 16px;
+  background: rgba(10,15,30,0.6);
+  border-top: 1px solid rgba(99,102,241,0.1);
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
 }

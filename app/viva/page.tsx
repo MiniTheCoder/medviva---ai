@@ -97,6 +97,12 @@ export default function VivaPage() {
   const [isListening, setIsListening] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [showTopicMenu, setShowTopicMenu] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [expandedSavedId, setExpandedSavedId] = useState<string | null>(null);
+  const [savedQuestions, setSavedQuestions] = useState<Array<{ id: string; topic: string; content: string; time: string; mode: string }>>([]);
   const [conversationHistory, setConversationHistory] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([]);
@@ -110,7 +116,14 @@ export default function VivaPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Set mounted = true after first client render (fixes SSR hydration)
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    // Load saved questions from localStorage on mount
+    const saved = localStorage.getItem("medviva-saved-questions");
+    if (saved) {
+      try { setSavedQuestions(JSON.parse(saved)); } catch (e) { console.error(e); }
+    }
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -432,9 +445,12 @@ export default function VivaPage() {
   }, []);
 
   // ── BONUS: Web Speech API — Speech-to-Text ────────────────────────────────
+  const sendMessageRef = useRef(sendMessage);
+  useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
   const toggleListening = useCallback(() => {
     if (!isSpeechRecognitionSupported()) {
-      alert("Voice input is not supported in this browser. Please use Chrome.");
+      alert("Voice input is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
       return;
     }
 
@@ -451,7 +467,16 @@ export default function VivaPage() {
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setIsListening(false);
+      if (event.error === "not-allowed") {
+        alert("Microphone access was denied. Please click the 🔒 icon in your browser address bar and allow microphone access for localhost.");
+      } else if (event.error === "no-speech") {
+        // Silently ignore — user just didn't speak
+      } else {
+        console.warn("Speech recognition error:", event.error);
+      }
+    };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = Array.from(event.results)
@@ -459,18 +484,25 @@ export default function VivaPage() {
         .join("");
       setInput(transcript);
 
-      // If final result, auto-send
+      // On final result, just fill the text box — user presses Send manually
+      // This prevents accidental sends due to natural speech pauses
       if (event.results[event.results.length - 1].isFinal) {
-        setTimeout(() => {
-          sendMessage();
-        }, 500);
+        setIsListening(false);
+        recognitionRef.current?.stop();
       }
     };
 
-    recognition.start();
-  }, [isListening, sendMessage]);
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Failed to start speech recognition:", e);
+      setIsListening(false);
+    }
+  }, [isListening]);
 
   // ── BONUS: Text-to-Speech for AI responses ────────────────────────────────
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const speakText = (text: string) => {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
@@ -481,8 +513,44 @@ export default function VivaPage() {
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
     utterance.lang = "en-US";
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utterance);
   };
+
+  const stopSpeaking = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
+  // ── Save Question to localStorage ─────────────────────────────────────────
+  const saveQuestion = useCallback((msg: Message) => {
+    const newEntry = {
+      id: msg.id,
+      topic: activeTopic || "General",
+      content: msg.content,
+      time: new Date().toLocaleString(),
+      mode: appMode,
+    };
+    setSavedQuestions(prev => {
+      // Avoid duplicates
+      if (prev.some(q => q.id === msg.id)) return prev;
+      const updated = [newEntry, ...prev];
+      localStorage.setItem("medviva-saved-questions", JSON.stringify(updated));
+      return updated;
+    });
+  }, [activeTopic, appMode]);
+
+  const deleteSavedQuestion = useCallback((id: string) => {
+    setSavedQuestions(prev => {
+      const updated = prev.filter(q => q.id !== id);
+      localStorage.setItem("medviva-saved-questions", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const accuracy =
     score.total > 0
@@ -514,13 +582,26 @@ export default function VivaPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.layout}>
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <Link href="/" className={styles.sidebarLogo}>
-            <div className={styles.sidebarLogoIcon}>🧬</div>
-            <span className={styles.sidebarLogoText}>MedViva AI</span>
-          </Link>
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <aside className={`${styles.sidebar} ${!isSidebarOpen ? styles.sidebarCollapsed : ""}`}>
+        <div className={styles.sidebarHeader} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Link href="/" className={styles.sidebarLogo} style={{ marginBottom: 0 }}>
+              <div className={styles.sidebarLogoIcon}>🧬</div>
+              <span className={styles.sidebarLogoText}>MedViva AI</span>
+            </Link>
+            <button
+              className={styles.sidebarToggleBtn}
+              onClick={() => setIsSidebarOpen(false)}
+              title="Close Sidebar"
+              style={{ marginRight: 0, padding: "4px" }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+              </svg>
+            </button>
+          </div>
           <button
             id="new-session-btn"
             className={styles.newSessionBtn}
@@ -567,7 +648,7 @@ export default function VivaPage() {
           </div>
         </div>
 
-        <div className={styles.sidebarSection}>Topics</div>
+        <div className={styles.sidebarSection}>TOPICS</div>
         <div className={styles.sidebarTopics}>
           {TOPICS.map((t) => (
             <button
@@ -640,12 +721,11 @@ export default function VivaPage() {
                   PDF only · Max 200MB · Drag & drop
                 </div>
               </div>
-
+              
               {/* Demo Action Area */}
-              <div style={{ textAlign: "center", padding: "16px", background: "rgba(99, 102, 241, 0.05)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(99, 102, 241, 0.15)" }}>
+              <div style={{ textAlign: "center", padding: "8px 0", marginTop: "8px" }}>
                 <button
-                  className={styles.newSessionBtn}
-                  style={{ background: "rgba(16, 185, 129, 0.15)", borderColor: "rgba(16, 185, 129, 0.3)", color: "#10b981", width: "100%", marginBottom: "12px" }}
+                  style={{ background: "transparent", border: "none", color: "#10b981", fontSize: "11px", fontWeight: "600", cursor: "pointer", textDecoration: "none", padding: "4px" }}
                   onClick={() => {
                     setUploadJob({
                       jobId: "demo-job",
@@ -656,15 +736,17 @@ export default function VivaPage() {
                     });
                   }}
                 >
-                  🚀 Launch Quick Demo (Pre-Loaded)
+                  🚀 Launch Quick Demo
                 </button>
-                <a 
-                  href="/demo-assets/High-Yield-Pathology-Demo.pdf" 
-                  download 
-                  style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", textDecoration: "underline" }}
-                >
-                  Don't have a textbook handy? Download our 1-MB Sample PDF.
-                </a>
+                <div style={{ marginTop: "4px" }}>
+                  <a 
+                    href="/demo-assets/High-Yield-Pathology-Demo.pdf" 
+                    download 
+                    style={{ fontSize: "10px", color: "var(--text-muted)", textDecoration: "underline", lineHeight: 1.2 }}
+                  >
+                    Download 1-MB Sample PDF
+                  </a>
+                </div>
               </div>
             </div>
           )}
@@ -675,6 +757,19 @@ export default function VivaPage() {
       <main className={styles.main}>
         <div className={styles.chatHeader}>
           <div className={styles.chatHeaderLeft}>
+            {!isSidebarOpen && (
+              <button
+                className={styles.sidebarToggleBtn}
+                onClick={() => setIsSidebarOpen(true)}
+                title="Open Sidebar"
+                style={{ padding: "4px" }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+              </button>
+            )}
             <div className={styles.chatHeaderIcon}>🤖</div>
             <div>
               <div className={styles.chatHeaderName}>
@@ -691,11 +786,27 @@ export default function VivaPage() {
             </div>
           </div>
           <div className={styles.chatHeaderRight}>
-            {/* BONUS: Voice Mode Toggle */}
+            <button className={styles.headerBtn} onClick={() => setShowSavedModal(true)}>🔖 Saved</button>
+            <button 
+              className={`${styles.headerBtn} ${isStatsOpen ? styles.headerBtnActive : ""}`} 
+              onClick={() => setIsStatsOpen(!isStatsOpen)}
+            >
+              {isStatsOpen ? "📊 Hide Stats" : "📊 View Stats"}
+            </button>
+            {isSpeaking && (
+              <button
+                id="stop-speaking-btn"
+                className={`${styles.headerBtn} ${styles.headerBtnDanger}`}
+                onClick={stopSpeaking}
+                title="Stop the AI from speaking"
+              >
+                ⏹ Stop Speaking
+              </button>
+            )}
             <button
               id="voice-mode-btn"
               className={`${styles.headerBtn} ${voiceMode ? styles.headerBtnActive : ""}`}
-              onClick={() => setVoiceMode((v) => !v)}
+              onClick={() => { setVoiceMode((v) => !v); if (isSpeaking) stopSpeaking(); }}
               title="Toggle voice mode (AI reads responses aloud)"
             >
               {voiceMode ? "🔊 Voice On" : "🔇 Voice Off"}
@@ -844,6 +955,33 @@ export default function VivaPage() {
                     )}
                   </div>
 
+                  {/* Save Question Button — only on AI messages */}
+                  {msg.role === "ai" && !msg.isStreaming && msg.content.length > 50 && (
+                    <button
+                      title={savedQuestions.some(q => q.id === msg.id) ? "Already saved" : "Save this question"}
+                      onClick={() => saveQuestion(msg)}
+                      style={{
+                        marginTop: "8px",
+                        background: savedQuestions.some(q => q.id === msg.id)
+                          ? "rgba(16,185,129,0.15)"
+                          : "rgba(99,102,241,0.1)",
+                        border: `1px solid ${savedQuestions.some(q => q.id === msg.id) ? "rgba(16,185,129,0.4)" : "rgba(99,102,241,0.25)"}`,
+                        color: savedQuestions.some(q => q.id === msg.id) ? "#10b981" : "#a5b4fc",
+                        borderRadius: "8px",
+                        padding: "5px 12px",
+                        fontSize: "12px",
+                        cursor: savedQuestions.some(q => q.id === msg.id) ? "default" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        transition: "all 0.2s",
+                      }}
+                      disabled={savedQuestions.some(q => q.id === msg.id)}
+                    >
+                      {savedQuestions.some(q => q.id === msg.id) ? "🔖 Saved" : "🔖 Save this question"}
+                    </button>
+                  )}
+
                   {/* Score Badge */}
                   {msg.score && (
                     <span
@@ -967,83 +1105,163 @@ export default function VivaPage() {
       </main>
 
       {/* ── Right Panel: Stats ───────────────────────────────────────────── */}
-      <aside className={styles.rightPanel}>
-        <div className={styles.panelHeader}>📊 Session Stats</div>
+      {isStatsOpen && (
+        <aside className={styles.rightPanel}>
+          <div className={styles.panelHeader}>📊 Session Stats</div>
 
-        <div className={styles.scoreCard}>
-          <div className={styles.scoreValue}>{accuracy}%</div>
-          <div className={styles.scoreLabel}>Accuracy</div>
-          <div className={styles.scoreBar}>
-            <div
-              className={styles.scoreBarFill}
-              style={{ width: `${accuracy}%` }}
-            />
+          <div className={styles.scoreCard}>
+            <div className={styles.scoreValue}>{accuracy}%</div>
+            <div className={styles.scoreLabel}>Accuracy</div>
+            <div className={styles.scoreBar}>
+              <div
+                className={styles.scoreBarFill}
+                style={{ width: `${accuracy}%` }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* ── Mastery Matrix ────────────────────────────────────────────── */}
-        <div className={styles.masteryCard}>
-          <div className={styles.masteryTitle}>Board Readiness Index</div>
-          <div className={styles.masteryBarContainer}>
-            <div
-              className={isWarning ? styles.masteryBarFillWarning : styles.masteryBarFill}
-              style={{ width: `${progressPercent}%` }}
-            />
+          {/* ── Mastery Matrix ────────────────────────────────────────────── */}
+          <div className={styles.masteryCard}>
+            <div className={styles.masteryTitle}>Board Readiness Index</div>
+            <div className={styles.masteryBarContainer}>
+              <div
+                className={isWarning ? styles.masteryBarFillWarning : styles.masteryBarFill}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className={styles.masterySubtext}>
+              {readinessText}
+            </div>
           </div>
-          <div className={styles.masterySubtext}>
-            {readinessText}
-          </div>
-        </div>
 
-        <div className={styles.statsList}>
-          {[
-            { label: "✅ Correct", value: score.correct, color: "var(--brand-success)" },
-            { label: "🔶 Partial", value: score.partial, color: "var(--brand-warning)" },
-            { label: "❌ Wrong", value: score.wrong, color: "var(--brand-danger)" },
-            { label: "📝 Total Asked", value: score.total, color: "var(--text-primary)" },
-          ].map((s) => (
-            <div key={s.label} className={styles.statRow}>
-              <span className={styles.statRowLabel}>{s.label}</span>
-              <span className={styles.statRowValue} style={{ color: s.color }}>
-                {s.value}
+          <div className={styles.statsList}>
+            {[
+              { label: "✅ Correct", value: score.correct, color: "var(--brand-success)" },
+              { label: "🔶 Partial", value: score.partial, color: "var(--brand-warning)" },
+              { label: "❌ Wrong", value: score.wrong, color: "var(--brand-danger)" },
+              { label: "📝 Total Asked", value: score.total, color: "var(--text-primary)" },
+            ].map((s) => (
+              <div key={s.label} className={styles.statRow}>
+                <span className={styles.statRowLabel}>{s.label}</span>
+                <span className={styles.statRowValue} style={{ color: s.color }}>
+                  {s.value}
+                </span>
+              </div>
+            ))}
+            <div className={styles.statRow}>
+              <span className={styles.statRowLabel}>📚 Topic</span>
+              <span className={styles.statRowValue} style={{ fontSize: 12 }}>
+                {activeTopic || "—"}
               </span>
             </div>
-          ))}
-          <div className={styles.statRow}>
-            <span className={styles.statRowLabel}>📚 Topic</span>
-            <span className={styles.statRowValue} style={{ fontSize: 12 }}>
-              {activeTopic || "—"}
-            </span>
+            <div className={styles.statRow}>
+              <span className={styles.statRowLabel}>🔊 Voice Mode</span>
+              <span className={styles.statRowValue} style={{ fontSize: 12, color: voiceMode ? "var(--brand-success)" : "var(--text-muted)" }}>
+                {voiceMode ? "On" : "Off"}
+              </span>
+            </div>
+            <div className={styles.statRow}>
+              <span className={styles.statRowLabel}>📄 Knowledge Base</span>
+              <span
+                className={styles.statRowValue}
+                style={{
+                  fontSize: 12,
+                  color:
+                    uploadJob?.status === "ready"
+                      ? "var(--brand-success)"
+                      : uploadJob?.status === "processing"
+                      ? "var(--brand-warning)"
+                      : "var(--text-muted)",
+                }}
+              >
+                {uploadJob?.status === "ready"
+                  ? "Active"
+                  : uploadJob?.status === "processing"
+                  ? `${uploadJob.progress}%`
+                  : "No docs"}
+              </span>
+            </div>
           </div>
-          <div className={styles.statRow}>
-            <span className={styles.statRowLabel}>🔊 Voice Mode</span>
-            <span className={styles.statRowValue} style={{ fontSize: 12, color: voiceMode ? "var(--brand-success)" : "var(--text-muted)" }}>
-              {voiceMode ? "On" : "Off"}
-            </span>
-          </div>
-          <div className={styles.statRow}>
-            <span className={styles.statRowLabel}>📄 Knowledge Base</span>
-            <span
-              className={styles.statRowValue}
-              style={{
-                fontSize: 12,
-                color:
-                  uploadJob?.status === "ready"
-                    ? "var(--brand-success)"
-                    : uploadJob?.status === "processing"
-                    ? "var(--brand-warning)"
-                    : "var(--text-muted)",
-              }}
-            >
-              {uploadJob?.status === "ready"
-                ? "Active"
-                : uploadJob?.status === "processing"
-                ? `${uploadJob.progress}%`
-                : "No docs"}
-            </span>
+        </aside>
+      )}
+
+      {/* ── Saved Questions Modal Overlay ─────────────────────────────────────── */}
+      {showSavedModal && (
+        <div className={styles.savedModalOverlay} onClick={(e) => {
+          if (e.target === e.currentTarget) setShowSavedModal(false);
+        }}>
+          <div className={styles.savedModalContent}>
+            <div className={styles.savedModalHeader}>
+              <div className={styles.savedModalTitle}>
+                🔖 Saved Questions 
+                <span style={{
+                  background: "rgba(251,191,36,0.2)",
+                  color: "#fbbf24",
+                  borderRadius: "20px",
+                  padding: "2px 10px",
+                  fontSize: "12px",
+                }}>{savedQuestions.length}</span>
+              </div>
+              <button className={styles.savedModalClose} onClick={() => setShowSavedModal(false)}>✕</button>
+            </div>
+            
+            <div className={styles.savedModalBody}>
+              {savedQuestions.length === 0 ? (
+                <div style={{ color: "var(--text-muted)", fontSize: "14px", gridColumn: "1 / -1", textAlign: "center", padding: "40px" }}>
+                  No saved questions yet. Click 🔖 on any AI message to save it for later review.
+                </div>
+              ) : (
+                savedQuestions.map(q => {
+                  const isExpanded = expandedSavedId === q.id;
+                  const cleanContent = q.content
+                    .replace(/<correct>[\s\S]*?<\/correct>/gi, "")
+                    .replace(/<explanation>[\s\S]*?<\/explanation>/gi, "")
+                    .replace(/\*\*/g, "").trim();
+
+                  return (
+                    <div key={q.id} className={styles.savedCard}>
+                      <div 
+                        className={styles.savedCardHeader}
+                        onClick={() => setExpandedSavedId(isExpanded ? null : q.id)}
+                      >
+                        <span className={styles.savedCardIcon}>{q.mode === "MCQ" ? "📝" : "🗣"}</span>
+                        <span className={styles.savedCardBadge}>
+                          {q.topic} · {q.mode}
+                        </span>
+                        <div className={styles.savedCardPreview}>
+                          {cleanContent}
+                        </div>
+                        <div className={styles.savedCardTime}>{q.time}</div>
+                        <div className={styles.savedCardChevron}>{isExpanded ? "▲" : "▼"}</div>
+                        <button
+                          className={styles.savedCardDelete}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSavedQuestion(q.id);
+                          }}
+                          title="Remove"
+                        >✕</button>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className={styles.savedCardExpanded}>
+                          <div style={{ whiteSpace: "pre-wrap" }}>
+                            {q.content
+                              .replace(/<correct>/gi, "\n\n✅ Correct Answer: ")
+                              .replace(/<\/correct>/gi, "")
+                              .replace(/<explanation>/gi, "\n\n💡 Explanation: ")
+                              .replace(/<\/explanation>/gi, "")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
-      </aside>
+      )}
     </div>
   );
 }
