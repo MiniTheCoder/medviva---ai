@@ -77,28 +77,44 @@ No file upload needed. Pre-loaded context is baked directly into the API.
 
 ## 🏗️ Architecture: Foundry IQ RAG Pipeline
 
-```
-User uploads PDF
-       ↓
-unpdf extracts raw text (page-by-page)
-       ↓
-Text is chunked into 1000-char passages (100-char overlap)
-       ↓
-Azure OpenAI text-embedding-3-small generates vectors
-       ↓
-Vectors stored in Azure AI Search (HNSW + Hybrid Semantic index)
-       ↓
-User picks a topic → uploadJob persisted in localStorage per subject
-       ↓
-User answers → answer text is vectorized → top 5 matching chunks retrieved
-       ↓
-Chunks injected into system prompt as grounded context
-       ↓
-gpt-5.1 generates Socratic evaluation OR cited MCQ
-       ↓
-Response streamed back with citations (filename + page number)
-       ↓
-Session state (chat, score, uploadJob) auto-saved to localStorage
+```mermaid
+graph TD
+    %% Define styles
+    classDef user fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff;
+    classDef azure fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff;
+    classDef app fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff;
+    classDef db fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff;
+
+    %% Nodes
+    A[User Uploads PDF]:::user
+    B[unpdf extracts raw text]:::app
+    C[Chunking: 1000-char / 100-overlap]:::app
+    D[Azure OpenAI: text-embedding-3-small]:::azure
+    E[(Azure AI Search: HNSW + Hybrid Index)]:::db
+    
+    F[User Answers Question]:::user
+    G[Vectorize Answer via text-embedding-3-small]:::azure
+    H[Retrieve Top 5 Relevant Chunks]:::db
+    I[Inject Chunks into Grounded Context]:::app
+    J[Azure OpenAI: gpt-5.1]:::azure
+    K[Stream Socratic/MCQ Response with Citations]:::app
+    L[(localStorage: Session & Score State)]:::db
+
+    %% Relationships
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    
+    F --> G
+    G --> H
+    H --> E
+    E -.-> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    L -.-> F
 ```
 
 **Key Guard-Rails:**
