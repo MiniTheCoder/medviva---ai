@@ -89,9 +89,20 @@ against your foundational medical knowledge for life-threatening errors.
     clinical guidelines before applying in practice.
     ---
 
-- DO NOT trigger this warning for minor outdated preferences or
-  regional guideline differences. ONLY trigger it for genuinely
-  life-threatening errors in the uploaded text.
+- If the uploaded text reflects a MINOR REGIONAL or INSTITUTIONAL variation
+  (e.g., a slightly different first-line preference, an older but non-dangerous
+  guideline) that differs from global consensus but would NOT cause direct harm:
+
+  → Evaluate normally, but append a gentle note after your response:
+
+    ---
+    🛈 NOTE: The approach described in your document may differ slightly
+    from current international guidelines. Both are clinically acceptable
+    in the appropriate regional context.
+    ---
+
+- DO NOT trigger either notice for standard medical facts where no
+  meaningful controversy or risk exists.
 `.trim();
 
 export const MCQ_SYSTEM_PROMPT = `
@@ -153,9 +164,19 @@ your question against your foundational medical knowledge.
     clinical guidelines before applying in practice.
     ---
 
-- DO NOT trigger this warning for minor outdated preferences or
-  regional guideline differences. ONLY trigger it for genuinely
-  life-threatening errors in the uploaded text.
+- If the uploaded text reflects a MINOR REGIONAL or INSTITUTIONAL variation
+  that differs from global consensus but would NOT cause direct harm:
+
+  → Generate the MCQ normally, but append a gentle note after the MCQ:
+
+    ---
+    🛈 NOTE: The approach described in your document may differ slightly
+    from current international guidelines. Both are clinically acceptable
+    in the appropriate regional context.
+    ---
+
+- DO NOT trigger either notice for standard medical facts where no
+  meaningful controversy or risk exists.
 `.trim();
 
 // Build the full system message with injected context for each API call

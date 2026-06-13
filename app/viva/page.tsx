@@ -103,6 +103,10 @@ export default function VivaPage() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [expandedSavedId, setExpandedSavedId] = useState<string | null>(null);
   const [savedQuestions, setSavedQuestions] = useState<Array<{ id: string; topic: string; content: string; time: string; mode: string }>>([]);
+  // ── Safety Guardrail State ─────────────────────────────────────────────────
+  const [safetyFlagCount, setSafetyFlagCount] = useState(0);
+  const [safetyBannerAcknowledged, setSafetyBannerAcknowledged] = useState(false);
+  const [safetyCheckboxChecked, setSafetyCheckboxChecked] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([]);
@@ -308,6 +312,13 @@ export default function VivaPage() {
         if (/CORRECT\s*✓/i.test(finalContent)) score = "correct";
         else if (/PARTIAL\s*◑/i.test(finalContent)) score = "partial";
         else if (/INCORRECT\s*✗/i.test(finalContent)) score = "wrong";
+
+        // ── Detect Clinical Safety Notice (Rule 4) ────────────────────────
+        if (/CLINICAL SAFETY NOTICE/i.test(finalContent)) {
+          setSafetyFlagCount((prev) => prev + 1);
+          setSafetyBannerAcknowledged(false);
+          setSafetyCheckboxChecked(false);
+        }
 
         if (score) {
           setScore((prev) => ({
@@ -827,6 +838,60 @@ export default function VivaPage() {
         </div>
 
         {/* ── Messages ──────────────────────────────────────────────────── */}
+        {/* ── Persistent Safety Banner (Rule 4: Clinical Consensus Override) */}
+        {safetyFlagCount > 0 && !safetyBannerAcknowledged && (
+          <div style={{
+            margin: "0 0 12px 0",
+            padding: "14px 18px",
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.4)",
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+              <span style={{ fontSize: "18px", flexShrink: 0 }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 700, color: "#f87171", fontSize: "13px", marginBottom: "4px" }}>
+                  Clinical Safety Notice — Source Document Conflict Detected
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                  {safetyFlagCount} contradiction{safetyFlagCount > 1 ? "s" : ""} detected in your uploaded document.
+                  One or more answers conflict with current evidence-based medical consensus.
+                  Please verify flagged protocols with your faculty before clinical application.
+                </div>
+              </div>
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>
+              <input
+                type="checkbox"
+                checked={safetyCheckboxChecked}
+                onChange={(e) => setSafetyCheckboxChecked(e.target.checked)}
+                style={{ accentColor: "#f87171", width: "14px", height: "14px", cursor: "pointer" }}
+              />
+              I acknowledge this warning and will verify with faculty before clinical use.
+            </label>
+            {safetyCheckboxChecked && (
+              <button
+                onClick={() => setSafetyBannerAcknowledged(true)}
+                style={{
+                  alignSelf: "flex-end",
+                  background: "rgba(239,68,68,0.15)",
+                  border: "1px solid rgba(239,68,68,0.4)",
+                  color: "#f87171",
+                  borderRadius: "8px",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                ✓ Mark as Reviewed with Faculty
+              </button>
+            )}
+          </div>
+        )}
         <div className={styles.messages}>
           {messages.length === 0 ? (
             <div className={styles.welcome}>
@@ -1148,6 +1213,20 @@ export default function VivaPage() {
                 </span>
               </div>
             ))}
+            {/* ── Safety Score Row ──────────────────────────────────────── */}
+            {safetyFlagCount > 0 && (
+              <div className={styles.statRow} style={{ borderTop: "1px solid rgba(239,68,68,0.2)", paddingTop: "10px", marginTop: "4px" }}>
+                <span className={styles.statRowLabel} style={{ color: "#f87171" }}>⚠️ Source Conflicts</span>
+                <span className={styles.statRowValue} style={{ color: "#f87171", fontWeight: 700 }}>
+                  {safetyFlagCount}
+                </span>
+              </div>
+            )}
+            {safetyFlagCount > 0 && score.total > 0 && (
+              <div style={{ fontSize: "11px", color: "#f87171", padding: "6px 0", lineHeight: 1.5, opacity: 0.85 }}>
+                ⚠️ True Readiness may be lower — verify flagged sections with faculty.
+              </div>
+            )}
             <div className={styles.statRow}>
               <span className={styles.statRowLabel}>📚 Topic</span>
               <span className={styles.statRowValue} style={{ fontSize: 12 }}>
