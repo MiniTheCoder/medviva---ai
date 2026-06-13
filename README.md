@@ -53,6 +53,20 @@ The endgame: **democratize medical exam preparation** by making the highest qual
 
 ---
 
+## 🧠 Why MedViva is Not a Study App (Clinical Reasoning Engine)
+
+The 1000-page textbook → thousands of semantic vectors → instant cross-subject retrieval → continuous mastery tracking pipeline is **not a study app. That's a clinical reasoning training system.**
+
+The scale matters. Azure AI Search indexing a full professional medical textbook means the Socratic Engine can:
+
+- Pull a rare complication from Chapter 47
+- Connect it to a pharmacology concept from Chapter 12
+- Test whether the student understands the link
+
+**No human tutor can do that across 1000 pages in real time. No flashcard app attempts it.**
+
+---
+
 ## 🚀 The Demo Paths (For Judges)
 
 We know your time is valuable. Two instant-access paths:
