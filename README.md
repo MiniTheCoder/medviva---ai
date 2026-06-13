@@ -69,6 +69,9 @@ The scale matters. Azure AI Search indexing a full professional medical textbook
 
 ## 🚀 The Demo Paths (For Judges)
 
+> [!IMPORTANT]
+> **API Keys Required:** To run these demos locally, you must first configure your `.env.local` file with your own Azure AI Foundry and Azure AI Search API keys. See the **Local Setup** section below for instructions.
+
 We know your time is valuable. Two instant-access paths:
 
 ### Path 1 — One-Click Quick Demo (10 seconds)
