@@ -1227,11 +1227,6 @@ export default function VivaPage() {
                 </span>
               </div>
             )}
-            {safetyFlagCount > 0 && score.total > 0 && (
-              <div style={{ fontSize: "11px", color: "#f87171", padding: "6px 0", lineHeight: 1.5, opacity: 0.85 }}>
-                ⚠️ True Readiness may be lower — verify flagged sections with faculty.
-              </div>
-            )}
             <div className={styles.statRow}>
               <span className={styles.statRowLabel}>📚 Topic</span>
               <span className={styles.statRowValue} style={{ fontSize: 12 }}>
