@@ -1197,6 +1197,11 @@ export default function VivaPage() {
             <div className={styles.masterySubtext}>
               {readinessText}
             </div>
+            {safetyFlagCount > 0 && (
+              <div style={{ marginTop: "10px", fontSize: "11px", color: "#f87171", fontWeight: 600, lineHeight: 1.4, background: "rgba(239,68,68,0.1)", padding: "6px", borderRadius: "4px" }}>
+                ⚠️ Confidence Modifier: {safetyFlagCount} source conflict(s) detected. True readiness may be lower.
+              </div>
+            )}
           </div>
 
           <div className={styles.statsList}>
