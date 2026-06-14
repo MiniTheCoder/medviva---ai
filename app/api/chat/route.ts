@@ -55,9 +55,6 @@ Anaphylaxis is a severe, potentially life-threatening allergic reaction. It can 
       groundedContext = DEMO_CONTEXT;
     } else if (isDangerousDemo && groundedContext === "") {
       groundedContext = DANGEROUS_CONTEXT;
-    } else if (groundedContext === "") {
-      // Ultimate safety net for the video recording:
-      groundedContext = DEMO_CONTEXT;
     }
 
     // ── HARD BLOCK: No file uploaded — refuse immediately ──────
