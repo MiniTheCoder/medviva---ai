@@ -52,6 +52,21 @@ The old solution is to pay thousands of rupees for coaching institutes, find a s
 
 ---
 
+## 👥 Target Audience
+
+MedViva AI is not just for NEET-PG aspirants. It covers all 5 years of the MBBS journey:
+
+| Audience | Format |
+|---|---|
+| **NEET-PG aspirants** | MCQ Mode (100% objective) |
+| **MBBS students (1st–4th year)** | Viva Mode (university exams have actual vivas!) |
+| **NEET-SS (super-specialty)** | Both modes |
+| **Clinical rotations** | Viva Mode (ward rounds, case presentations) |
+
+MBBS university exams throughout the 5 years **DO have practical viva examinations.** MedViva covers the entire MBBS journey, not just the final NEET-PG.
+
+---
+
 ## 🎯 The Vision
 
 > *"Every medical student in India deserves a ruthless examiner in their pocket."*
