@@ -194,40 +194,44 @@ GitHub Copilot was an active co-developer throughout this project:
 
 ```bash
 # 1. Clone the repo
-git clone <your-repo-url>
-cd medviva-ai
+git clone https://github.com/MiniTheCoder/medviva---ai.git
+cd medviva---ai
 
 # 2. Install dependencies
 npm install
 
 # 3. Copy the example env file and fill in your keys
 cp .env.example .env.local
-# Edit .env.local with your Azure credentials
+# Edit .env.local with your Azure credentials (see Environment Variables below)
 
 # 4. Run the development server
 npm run dev
 
 # 5. Open the app
-# http://localhost:3000
+# http://localhost:3000/viva
 ```
+
+> [!IMPORTANT]
+> **For Judges:** You must provide your own Azure API keys to run this project locally.
+> You will need:
+> - An **Azure OpenAI** resource with `gpt-4o` or `gpt-5.1` deployment + `text-embedding-3-small` deployment
+> - An **Azure AI Search** resource (Free tier works)
+> All keys go into `.env.local` (never committed to the repo). See the environment variables table below.
 
 ### Environment Variables (see `.env.example`)
 
-```
-AZURE_OPENAI_CHAT_ENDPOINT=
-AZURE_OPENAI_CHAT_API_KEY=
-AZURE_OPENAI_CHAT_DEPLOYMENT=
-
-AZURE_OPENAI_EMBEDDING_ENDPOINT=
-AZURE_OPENAI_EMBEDDING_API_KEY=
-AZURE_OPENAI_EMBEDDING_DEPLOYMENT=
-
-AZURE_SEARCH_ENDPOINT=
-AZURE_SEARCH_API_KEY=
-AZURE_SEARCH_INDEX_NAME=
-
-AZURE_OPENAI_API_VERSION=
-```
+| Variable | Description |
+|---|---|
+| `AZURE_OPENAI_CHAT_ENDPOINT` | Your Azure OpenAI resource endpoint URL |
+| `AZURE_OPENAI_CHAT_API_KEY` | Your Azure OpenAI API key |
+| `AZURE_OPENAI_CHAT_DEPLOYMENT` | Deployment name (e.g. `gpt-4o` or `gpt-5.1`) |
+| `AZURE_OPENAI_EMBEDDING_ENDPOINT` | Azure OpenAI endpoint for embeddings |
+| `AZURE_OPENAI_EMBEDDING_API_KEY` | Azure OpenAI API key for embeddings |
+| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | Deployment name (e.g. `text-embedding-3-small`) |
+| `AZURE_SEARCH_ENDPOINT` | Your Azure AI Search resource endpoint |
+| `AZURE_SEARCH_API_KEY` | Azure AI Search admin key |
+| `AZURE_SEARCH_INDEX_NAME` | Index name (e.g. `medviva-index`) |
+| `AZURE_OPENAI_API_VERSION` | API version (e.g. `2024-12-01-preview`) |
 
 ---
 
