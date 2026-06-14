@@ -1316,6 +1316,19 @@ export default function VivaPage() {
                           className={styles.savedCardDelete}
                           onClick={(e) => {
                             e.stopPropagation();
+                            navigator.clipboard.writeText(q.content).then(() => {
+                              alert('Copied!');
+                            }).catch(() => {
+                              alert('Failed to copy');
+                            });
+                          }}
+                          title="Copy"
+                          style={{ marginRight: '8px' }}
+                        >📋</button>
+                        <button
+                          className={styles.savedCardDelete}
+                          onClick={(e) => {
+                            e.stopPropagation();
                             deleteSavedQuestion(q.id);
                           }}
                           title="Remove"

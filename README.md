@@ -26,14 +26,20 @@ The old solution is to pay thousands of rupees for coaching institutes, find a s
 
 **MedViva AI** turns any medical textbook into a personal AI examiner that is:
 
+### Core Features & Functionality
+
+- **Dual-Mode Examination:** Toggle seamlessly between an open-ended "Viva Mode" (Socratic dialogue) and "MCQ Mode" (Board-style objective questions based on clinical vignettes).
+- **Two-Tier Safety Guardrails:** MedViva AI doesn't just block hallucination; it actively validates context against global medical consensus. It uses a two-tier flagging system (`[!CAUTION]` for life-threatening errors vs `[!INFO]` for regional variations) to catch dangerous errors in uploaded textbooks.
+- **Clinical Consensus Override & Audit Logging:** If a dangerous source contradiction is detected, the AI preserves exam flow but triggers a persistent, un-dismissable safety banner that requires a manual "Mark as Reviewed with Faculty" acknowledgement—creating a standard medico-legal audit trail.
+- **Mastery Matrix & Document Reliability (BRI):** A dynamic "Board Readiness Index" tracks your session progress. It also calculates a **Confidence Modifier** based on the number of source conflicts detected in your document, acknowledging the formula: *True Readiness = Student Accuracy × Document Reliability*.
+- **Strict Document Isolation:** Upload your PDF textbook into one of the 19 dedicated NEET-PG subject tabs (Pathology, Anatomy, etc.). The AI creates an isolated vector memory space for that subject so Pathology questions never bleed into Physiology.
+- **Persistent Knowledge Base:** Your uploaded textbooks are saved to their respective subjects. Clicking "+ New Session" wipes your chat history for a fresh exam, but preserves your document context.
+- **Saved Questions Bank:** A premium, built-in revision bank. Click the "Save" bookmark on any high-yield AI question to store it in a beautifully formatted, full-width vertical accordion list for later review.
+
 - **Relentlessly Socratic** — It doesn't give you the answer. It asks *why*. It probes. It cross-questions until you truly understand.
 - **Grounded in YOUR notes** — Upload your textbook PDF. The AI examines you *only* on what you uploaded. No hallucinations. Every single correction is cited back to a page number.
-- **Persistent Knowledge Base** — Upload once, study forever. Your textbook stays bound to its subject tab. Clicking "+ New Session" resets only your chat history — never your uploaded document.
 - **Available 24/7, for free** — A student in rural Bihar gets the same examiner quality as a student at AIIMS Delhi.
-- **Dual-mode** — Toggle between an open-ended **Viva Mode** (oral-style Socratic dialogue) and **MCQ Mode** (board-style objective questions with clinical vignettes).
-- **Mastery Matrix** — A gamified 'Board Readiness Index' tracks your session progress, with dynamic status tiers that enforce a 60% minimum accuracy gate to prevent brute-forcing.
 - **Smart Fallback** — Even if you upload a scanned/image-based PDF (0 extracted text), MedViva AI falls back to its internal medical knowledge to keep your session going. No crashes. No refusals.
-- **Strict Document Isolation** — Each subject tab has its own upload slot. A Pathology textbook can never "bleed" into a Physiology session.
 - **All 19 NEET-PG subjects covered** — Anatomy, Physiology, Biochemistry, Pathology, Pharmacology, Microbiology, FMT, SPM, General Medicine, Surgery, OBG, Pediatrics, ENT, Ophthalmology, Orthopedics, Radiology, Anesthesia, Dermatology, Psychiatry.
 
 ---
