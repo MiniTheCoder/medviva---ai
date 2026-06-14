@@ -122,6 +122,13 @@ export default function VivaPage() {
   // Set mounted = true after first client render (fixes SSR hydration)
   useEffect(() => {
     setMounted(true);
+    // NUCLEAR CLEANUP: Clear ALL old topic sessions to prevent cross-topic contamination
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("medviva-topic-")) {
+        localStorage.removeItem(key);
+      }
+    }
     // Load saved questions from localStorage on mount
     const saved = localStorage.getItem("medviva-saved-questions");
     if (saved) {
@@ -135,18 +142,9 @@ export default function VivaPage() {
   }, [messages]);
 
   // ── Persistent Session Save ────────────────────────────────────────────────
-  useEffect(() => {
-    if (activeTopic && mounted) {
-      const stateToSave = {
-        messages,
-        score,
-        uploadJob,
-        conversationHistory,
-        appMode
-      };
-      localStorage.setItem(`medviva-topic-${activeTopic}`, JSON.stringify(stateToSave));
-    }
-  }, [activeTopic, mounted, messages, score, uploadJob, conversationHistory, appMode]);
+  // DISABLED: Saving topic state to localStorage was causing cross-topic
+  // contamination (Pharmacology PDF appearing in Microbiology). For the demo
+  // video, each topic starts fresh — upload your PDF, get your questions.
 
   // ── TASK 5: Start a new session for a topic ───────────────────────────────
   const startTopic = useCallback(async (topic: string, forceNew = false) => {
