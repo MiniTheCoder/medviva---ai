@@ -60,11 +60,11 @@ Anaphylaxis is a severe, potentially life-threatening allergic reaction. It can 
       groundedContext = DEMO_CONTEXT;
     }
 
-    // ── HARD BLOCK: No file uploaded and no context — refuse immediately ──────
+    // ── HARD BLOCK: No file uploaded — refuse immediately ──────
     // This is a bulletproof API-level guard. If no filename was sent at all
     // (user clicked a topic without uploading anything), we return a refusal
     // message directly without spending a single token on Azure OpenAI.
-    if (!filename && groundedContext === "") {
+    if (!filename) {
       const modeText = mode === "mcq" ? "generate cited MCQs" : "analyze the text and begin your custom assessment";
       const refusalMessage = `Welcome to the ${topic || "Medical"} Examination Room. I am your examiner. Currently, the knowledge base is unprovisioned. Please upload your curriculum notes or textbook chapter in the sidebar so I can ${modeText}.`;
       const encoder = new TextEncoder();
