@@ -8,6 +8,14 @@
 
 ---
 
+## 🏗️ Architecture Diagram
+
+![MedViva AI Architecture](./public/architecture.png)
+
+> **Stack:** Next.js Serverless API Routes → Azure AI Search (Hybrid HNSW Vector Index) → Azure OpenAI GPT-5.1 → Streaming SSE Response → React UI. PDF parsing is done in-memory via `unpdf`. GitHub Copilot was used for frontend component logic and state management.
+
+---
+
 ## 😰 The Problem We're Solving
 
 Every year, over **200,000 Indian medical graduates** appear for NEET-PG — one of the most competitive postgraduate entrance exams in the world. The pass rate hovers around **10-15%**.
