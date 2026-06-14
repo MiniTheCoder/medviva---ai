@@ -153,30 +153,9 @@ export default function VivaPage() {
 
     setActiveTopic(topic);
 
-    let currentUploadJob = uploadJob;
-
-    if (!forceNew && mounted) {
-      const savedState = localStorage.getItem(`medviva-topic-${topic}`);
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          setMessages(parsed.messages || []);
-          setConversationHistory(parsed.conversationHistory || []);
-          setScore(parsed.score || { correct: 0, partial: 0, wrong: 0, total: 0 });
-          setUploadJob(parsed.uploadJob || null);
-          currentUploadJob = parsed.uploadJob || null;
-          setAppMode(parsed.appMode || "viva");
-          setIsStreaming(false);
-          return; // Exit early, we loaded existing state
-        } catch (e) {
-          console.error("Failed to parse saved state", e);
-        }
-      } else {
-        // If switching topics but no saved state, clear uploadJob
-        setUploadJob(null);
-        currentUploadJob = null;
-      }
-    }
+    // ALWAYS start clean — never inherit uploadJob from a different topic
+    setUploadJob(null);
+    const currentUploadJob = null;
 
     setMessages([]);
     setConversationHistory([]);
