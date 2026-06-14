@@ -151,11 +151,17 @@ export default function VivaPage() {
     // Abort any in-flight request
     abortControllerRef.current?.abort();
 
+    const isSameTopic = topic === activeTopic;
+
     setActiveTopic(topic);
 
-    // ALWAYS start clean — never inherit uploadJob from a different topic
-    setUploadJob(null);
-    const currentUploadJob = null;
+    // If switching to a DIFFERENT topic → clear the upload (prevent cross-contamination)
+    // If same topic (New Session) → keep the uploaded PDF
+    let currentUploadJob = uploadJob;
+    if (!isSameTopic) {
+      setUploadJob(null);
+      currentUploadJob = null;
+    }
 
     setMessages([]);
     setConversationHistory([]);
