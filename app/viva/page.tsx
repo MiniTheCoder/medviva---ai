@@ -183,6 +183,20 @@ export default function VivaPage() {
     setMessages([]);
     setConversationHistory([]);
     setScore({ correct: 0, partial: 0, wrong: 0, total: 0 });
+
+    // If no file is uploaded for this topic, show a welcome message instead of calling the API
+    if (!currentUploadJob?.filename) {
+      const welcomeMsg: Message = {
+        id: uuid(),
+        role: "ai",
+        content: `Welcome to the ${topic} Examination Room. I am your examiner. Please upload your curriculum notes or textbook chapter in the sidebar so I can analyze the text and begin your custom assessment.`,
+        time: getTime(),
+      };
+      setMessages([welcomeMsg]);
+      setIsStreaming(false);
+      return;
+    }
+
     setIsStreaming(true);
 
     // Create the "Professor Mode" opening prompt
