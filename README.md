@@ -67,7 +67,7 @@ The endgame: **democratize medical exam preparation** by making the highest qual
 
 ---
 
-## 🧠 Why MedViva is Not a Study App (Clinical Reasoning Engine)
+## 🧠 Why MedViva is Not a Study App — It's a Clinical Reasoning Engine
 
 The 1000-page textbook → thousands of semantic vectors → instant cross-subject retrieval → continuous mastery tracking pipeline is **not a study app. That's a clinical reasoning training system.**
 
