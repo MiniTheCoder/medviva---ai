@@ -61,7 +61,7 @@ export async function searchKnowledgeBase(
       queryType: "simple",
     };
 
-    const results = await client.search(query, searchOptions);
+    const results = await client.search(query || "*", searchOptions);
 
     const chunks: SearchChunk[] = [];
     for await (const result of results.results) {
